@@ -1,6 +1,7 @@
 import ChatInput from "./components/ChatInput";
 import UserMessage from "./components/UserMessage";
 import AIMessage from "./components/AIMessage";
+//import "./border.css";
 
 function App() {
   return (
@@ -18,7 +19,6 @@ upstream, see 'push.autoSetupRemote' in 'git help config'.
 
 什么意思怎么办" />
         <AIMessage message="This is an AI reply." />
-        \
       </div>
       <ChatInput />
     </>

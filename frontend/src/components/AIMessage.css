@@ -1,7 +1,6 @@
 .ai-message {
     display: flex;
     justify-content: flex-start;
-    border: 1px solid #000;
 }
 
 .user-message-bubble {
