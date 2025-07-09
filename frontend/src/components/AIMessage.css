@@ -3,8 +3,9 @@
     justify-content: flex-start;
 }
 
-.user-message-bubble {
-    background-color: #f0f0f0;
+.ai-message-bubble {
+    background-color: #ffffff;
     padding: 10px;
     margin: 10px;
+    margin-left: 0;
 }
