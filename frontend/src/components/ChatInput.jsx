@@ -5,6 +5,13 @@ import sendButton from './icons8-send-button-90.png';
 export default function ChatInput() {
   const [inputValue, setInputValue] = useState('');
 
+  const handleSendMessage = () => {
+    if (inputValue.trim()) {
+      console.log(inputValue);
+      setInputValue('');
+    }
+  }
+
   return (
     <div className="chat-input">
       <input
@@ -15,7 +22,8 @@ export default function ChatInput() {
       />
       <div className="chat-button-container">
         <button 
-        className="send-button">
+        className="send-button"
+        onClick={handleSendMessage}>
           <img src={sendButton} alt="Send" width={20} height={20}/>
         </button>
       </div>
