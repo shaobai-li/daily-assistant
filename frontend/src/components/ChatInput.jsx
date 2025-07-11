@@ -8,7 +8,6 @@ export default function ChatInput() {
   return (
     <div className="chat-input">
       <input
-        type="text"
         className="input-field"
         placeholder="Ask anything"
         value={inputValue}
