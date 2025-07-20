@@ -1,6 +1,7 @@
 import ChatInput from "./components/ChatInput";
 import UserMessage from "./components/UserMessage";
 import AIMessage from "./components/AIMessage";
+import { useState } from "react";
 //import "./border.css";
 
 
@@ -23,6 +24,7 @@ function App() {
   
   const handleSendMessage = (message) => {
     setMessages([...messages, {role: "user", content: message}]);
+    console.log(messages);
   }
 
   return (
