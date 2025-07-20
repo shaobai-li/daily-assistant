@@ -31,8 +31,8 @@ function App() {
     <>
       <div className="chat-container"
       style={{display: "flex", flexDirection: "column", maxWidth: "840px"}}>
-        {messages.map((message) => (
-          message.role === "user" ? (<UserMessage message={message.content} />) : (<AIMessage message={message.content} />
+        {messages.map((message, index) => (
+          message.role === "user" ? (<UserMessage key={index} message={message.content} />) : (<AIMessage key={index} message={message.content} />
           )
         ))}
       </div>
