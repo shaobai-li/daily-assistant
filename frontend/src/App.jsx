@@ -6,7 +6,7 @@ import AIMessage from "./components/AIMessage";
 
 
 function App() {
-  const messages = [
+  const [messages, setMessages] = useState([
     {
       role: "user",
       content: "Hello, how are you?"
@@ -19,7 +19,12 @@ function App() {
       role: "assistant",
       content: "This is an AI reply."
     }
-  ];  
+  ]);
+  
+  const handleSendMessage = (message) => {
+    setMessages([...messages, {role: "user", content: message}]);
+  }
+
   return (
     <>
       <div className="chat-container"
@@ -29,7 +34,7 @@ function App() {
           )
         ))}
       </div>
-      <ChatInput />
+      <ChatInput onSendMessage={handleSendMessage} />
     </>
   )
 }

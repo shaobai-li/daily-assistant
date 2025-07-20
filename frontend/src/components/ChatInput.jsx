@@ -2,12 +2,12 @@ import './ChatInput.css';
 import { useState } from 'react';
 import sendButton from './icons8-send-button-90.png';
 
-export default function ChatInput() {
+export default function ChatInput({ onSendMessage }) {
   const [inputValue, setInputValue] = useState('');
 
   const handleSendMessage = () => {
     if (inputValue.trim()) {
-      console.log(inputValue);
+      onSendMessage(inputValue.trim());
       setInputValue('');
     }
   }
