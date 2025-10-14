@@ -4,23 +4,21 @@ from pydantic import BaseModel
 from typing import List
 import os
 from dotenv import load_dotenv
+from agents import RootAgent
 
 load_dotenv()
 
 app = FastAPI()
 client = OpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
+assistant = RootAgent()
 
 class Message(BaseModel):
     content: str
 
 @app.post("/chat")
 async def chat(request: Message):
-    messages = [{"role": "user", "content": request.content}]
-    response = client.chat.completions.create(
-        model="deepseek-chat",
-        messages=messages
-    )
-    return {"message": response.choices[0].message.content}
+    response = assistant.generate_response(request.content)
+    return {"message": response}
 
 if __name__ == "__main__":
     import uvicorn
