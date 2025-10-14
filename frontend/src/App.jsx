@@ -9,22 +9,29 @@ import { useState } from "react";
 function App() {
   const [messages, setMessages] = useState([
     {
-      role: "user",
-      content: "Hello, how are you?"
-    },
-    {
-      role: "user", 
-      content: "fatal: The current branch main has no upstream branch.\nTo push the current branch and set the remote as upstream, use\n\n    git push --set-upstream origin main\n\nTo have this happen automatically for branches without a tracking\nupstream, see 'push.autoSetupRemote' in 'git help config'.\n\n什么意思怎么办"
-    },
-    {
       role: "assistant",
-      content: "This is an AI reply."
+      content: "Good day! 白哥"
     }
   ]);
   
   const handleSendMessage = (message) => {
     setMessages([...messages, {role: "user", content: message}]);
     console.log(messages);
+
+    fetch("/chat", {
+      method: "POST",
+      body: JSON.stringify({content: message}),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      setMessages([...messages, {role: "assistant", content: data.message}]);
+    })
+    .catch(error => {
+      console.error("Error:", error);
+    });
   }
 
   return (

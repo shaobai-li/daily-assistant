@@ -19,7 +19,3 @@ class Message(BaseModel):
 async def chat(request: Message):
     response = assistant.generate_response(request.content)
     return {"message": response}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
