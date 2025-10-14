@@ -1,2 +1,1 @@
-An LLM agent that manages my calendar and daily schedule.
-
+An agent that can help me manage my inspiration library.
