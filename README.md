@@ -1,1 +1,1 @@
-An agent that can help me manage my inspiration library.
+An agent that can help me manage my to-do list.
