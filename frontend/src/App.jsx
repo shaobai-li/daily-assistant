@@ -15,7 +15,7 @@ function App() {
   ]);
   
   const handleSendMessage = (message) => {
-    setMessages([...messages, {role: "user", content: message}]);
+    setMessages((prev) => [...prev, {role: "user", content: message}]);
     console.log(messages);
 
     fetch("/chat", {
@@ -27,7 +27,7 @@ function App() {
     })
     .then(response => response.json())
     .then(data => {
-      setMessages([...messages, {role: "assistant", content: data.message}]);
+      setMessages((prev) => [...prev, {role: "assistant", content: data.message}]);
     })
     .catch(error => {
       console.error("Error:", error);
