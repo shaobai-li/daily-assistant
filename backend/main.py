@@ -17,5 +17,5 @@ class Message(BaseModel):
 
 @app.post("/chat")
 async def chat(request: Message):
-    response = assistant.generate_response(request.content)
+    response = assistant.process_request(request.content)
     return {"message": response}
