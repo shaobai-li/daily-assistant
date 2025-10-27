@@ -50,28 +50,36 @@ tools = [
     }
 ]
 
+
+
+
 class RootAgent:
     def __init__(self):
         self.client = OpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
         self.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
         self.json_file = "todos.json"
         self.tools = tools
+        self.function_calls = {
+            "write_todo": self.write_todo,
+            "read_todo": self.read_todo
+        }
 
     def process_request(self, user_content):
         self.messages.append({"role": "user", "content": user_content})
         message = self.get_generation(self.messages)
-                
+
         content = None
         if message.tool_calls:
-            self.messages.append(message)
+            self.messages.append({"role": "assistant", "content": message.content, "tool_calls": message.tool_calls})
             tool = message.tool_calls[0]
-            content = tool.function.arguments
+            content = self.function_calls[tool.function.name](tool.function.arguments)
+            print(type(tool.function.arguments))
             self.messages.append({"role": "tool", "tool_call_id": tool.id, "content": content})
-            print({"role": "tool", "tool_call_id": tool.id, "content": content})
             message = self.get_generation(self.messages)
 
         ai_content = message.content
         self.messages.append({"role": "assistant", "content": ai_content})
+        print(self.messages)
         return ai_content
 
     def get_generation(self, context):
