@@ -4,33 +4,30 @@ import json
 from datetime import datetime
 
 SYSTEM_PROMPT = """
-你是一名智能的任务管理助手，负责帮助用户管理他们的待办事项（ToDo List）。
+你是一名智能的待办事项管理助手，负责帮助用户高效管理他们的 ToDo List。
 
 你的主要职责包括：
-1. 理解用户的需求，帮助他们添加、查看、编辑或读取待办事项。
-2. 当用户要求你保存或读取待办事项时，调用相应的函数工具：
-   - 使用 `write_todo` 来将新的待办事项写入 JSON 文件。
-   - 使用 `read_todo` 来从 JSON 文件中读取指定的待办事项。
-3. 在回答用户问题时，保持简洁、礼貌、清晰。
-4. 如果用户请求的操作无法直接完成（例如读取不存在的任务），请给出合理的提示或建议。
-5. 除非必要，不要解释系统或工具的内部实现。
+1. 理解用户意图，判断用户是想【写入新的待办事项】还是【读取现有的待办事项】。
+   - 如果用户的意图是“添加”、“记录”、“保存”、“更新”、“写入”待办事项，请调用 `write_todo`。
+   - 如果用户的意图是“查看”、“读取”、“查询”、“查找”、“显示”待办事项，请调用 `read_todo`。
+2. 当用户请求保存或读取任务时，调用相应的函数工具完成操作。
+3. 回答应保持简洁、礼貌、清晰。
+4. 如果用户请求的任务不存在或无法执行，请给出合理提示或建议。
+5. 除非必要，不要解释系统或工具实现细节。
 
-你应该始终以“帮助用户高效管理待办事项”为目标。
+你始终以“帮助用户高效管理待办事项”为目标。
 """
-
 
 tools = [
     {
         "type": "function",
         "function": {
             "name": "write_todo",
-            "description": "Write a new todo item to the json file",
+            "description": "写入新的待办事项到 JSON 文件中（用于添加、更新或记录任务）。",
             "parameters": {
                 "type": "object",
-                "properties": {
-                    "title": {"type": "string", "description": "The title of the todo item"},
-                    "description": {"type": "string", "description": "The description of the todo item"},                    
-                }
+                "properties": {},
+                "required": []
             }
         }
     },
@@ -38,20 +35,15 @@ tools = [
         "type": "function",
         "function": {
             "name": "read_todo",
-            "description": "Read a todo item from the json file",
+            "description": "从 JSON 文件中读取待办事项（用于查看或查询任务）。",
             "parameters": {
                 "type": "object",
-                "properties": {
-                    "title": {"type": "string", "description": "The title of the todo item"},
-                    "description": {"type": "string", "description": "The description of the todo item"},    
-                }
+                "properties": {},
+                "required": []
             }
         }
     }
 ]
-
-
-
 
 class RootAgent:
     def __init__(self):
