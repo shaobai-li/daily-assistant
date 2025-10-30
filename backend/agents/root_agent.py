@@ -3,87 +3,85 @@ import os
 import json
 from datetime import datetime
 
-SYSTEM_PROMPT = """
-你是一名智能的待办事项管理助手，负责帮助用户高效管理他们的 ToDo List。
+from openai.types.responses import response_audio_delta_event
 
-你的主要职责包括：
-1. 理解用户意图，判断用户是想【写入新的待办事项】还是【读取现有的待办事项】。
-   - 如果用户的意图是“添加”、“记录”、“保存”、“更新”、“写入”待办事项，请调用 `write_todo`。
-   - 如果用户的意图是“查看”、“读取”、“查询”、“查找”、“显示”待办事项，请调用 `read_todo`。
-2. 当用户请求保存或读取任务时，调用相应的函数工具完成操作。
-3. 回答应保持简洁、礼貌、清晰。
-4. 如果用户请求的任务不存在或无法执行，请给出合理提示或建议。
-5. 除非必要，不要解释系统或工具实现细节。
-
-你始终以“帮助用户高效管理待办事项”为目标。
-"""
-
-tools = [
+ROOT_SYS_PROMPT = """
+用户会输入一段文字，几乎都是下达和todo-list相关的一个或多个指令，偶尔会有对你发起的普通聊天。你的职责是：判断用户的意图，并输出一个 JSON 指令列表。
+输出格式必须严格符合以下规范（不要输出多余文字）：
+```json
+[
     {
-        "type": "function",
-        "function": {
-            "name": "write_todo",
-            "description": "写入新的待办事项到 JSON 文件中（用于添加、更新或记录任务）。",
-            "parameters": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
+        "id": "数字索引",
+        "用户意图分析": {
+            "用户的输入": "用户输入的原始文字",
+            "用户意图": "往todo-list中写入"/"从todo-list中读取"/"普通聊天",
+            "指令或提问": "指令/提问/其他",
+            "待办事项具体与否": "是/否",
+            "原因说明": "简短说明你是如何分析用户意图的"
         }
     },
-    {
-        "type": "function",
-        "function": {
-            "name": "read_todo",
-            "description": "从 JSON 文件中读取待办事项（用于查看或查询任务）。",
-            "parameters": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        }
-    }
+    ...
 ]
+```
+"""
 
+INFO_EXTRACTION_SYS_PROMPT = """
+你是信息提取助手，负责从用户的自然语言输入中提取出事项的核心信息，并以 JSON 格式输出。
+```json
+[
+  {
+    "事项名称": "提取用户输入的事项中最核心的任务或动作",
+    "备注": "用于补充附加信息，如时间、地点、人物、条件、原因等。如果输入中没有额外说明，可留空字符串。"
+  }
+]
+```
+"""
 class RootAgent:
     def __init__(self):
-        self.client = OpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
-        self.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        # self.client = OpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.json_file = "todos.json"
-        self.tools = tools
         self.function_calls = {
             "write_todo": self.write_todo,
             "read_todo": self.read_todo
         }
 
     def process_request(self, user_content):
-        self.messages.append({"role": "user", "content": user_content})
-        message = self.get_generation(self.messages)
+        root_messages = [{"role": "system", "content": ROOT_SYS_PROMPT}]
+        root_messages.append({"role": "user", "content": user_content})
+        response_message = self.get_generation(root_messages)
 
         content = None
-        if message.tool_calls:
-            self.messages.append({"role": "assistant", "content": message.content, "tool_calls": message.tool_calls})
-            tool = message.tool_calls[0]
-            content = self.function_calls[tool.function.name](tool.function.arguments)
-            print(type(tool.function.arguments))
-            self.messages.append({"role": "tool", "tool_call_id": tool.id, "content": content})
-            message = self.get_generation(self.messages)
+        if response_message.tool_calls:
+            root_messages.append({"role": "assistant", "content": response_message.content, "tool_calls": response_message.tool_calls})
+            tool = response_message.tool_calls[0]
+            content = self.function_calls[tool.function.name](user_content)
+            root_messages.append({"role": "tool", "tool_call_id": tool.id, "content": content})
+            response_message = self.get_generation(root_messages)
 
-        ai_content = message.content
-        self.messages.append({"role": "assistant", "content": ai_content})
-        print(self.messages)
+        ai_content = response_message.content
+        root_messages.append({"role": "assistant", "content": ai_content})
+        print(ai_content)
         return ai_content
 
-    def get_generation(self, context):
+    def get_generation(self, messages):
         response = self.client.chat.completions.create(
-            model="deepseek-chat",
-            messages=context,
-            tools=self.tools
-        )
+        # model="deepseek-chat",
+        model="gpt-4o-mini",
+        messages=messages
+        )    
         return response.choices[0].message
 
     def write_todo(self, user_content):
-        return "Todo stored successfully"
+
+        info_extraction_messages = [{"role": "system", "content": INFO_EXTRACTION_SYS_PROMPT}]
+        info_extraction_messages.append({"role": "user", "content": user_content})
+        response_message = self.get_generation(info_extraction_messages)
+        info = response_message.content
+    
+        info_extraction_messages.append({"role": "assistant", "content": info})
+        print(info)
+        return info
 
     def read_todo(self, user_content):
         return "Todo read successfully"
