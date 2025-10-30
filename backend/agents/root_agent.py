@@ -26,12 +26,10 @@ ROOT_SYS_PROMPT = """
 INFO_EXTRACTION_SYS_PROMPT = """
 你是信息提取助手，负责从用户的自然语言输入中提取出事项的核心信息，并以 JSON 格式输出。
 ```json
-[
-  {
+{
     "事项名称": "提取用户输入的事项中最核心的任务或动作",
     "备注": "用于补充附加信息，如时间、地点、人物、条件、原因等。如果输入中没有额外说明，可留空字符串。"
-  }
-]
+}
 ```
 """
 class RootAgent:
@@ -74,12 +72,27 @@ class RootAgent:
 
         info_extraction_messages = [{"role": "system", "content": INFO_EXTRACTION_SYS_PROMPT}]
         info_extraction_messages.append({"role": "user", "content": user_content})
-        response_message = self.get_generation(info_extraction_messages)
-        info = response_message.content
-    
+        response_message = self.get_generation(info_extraction_messages)        
+        info = clean_json_tags(response_message.content)
+        print(info)
         info_extraction_messages.append({"role": "assistant", "content": info})
-        return info
 
+        json_todo_item = json.loads(info)
+        json_todo_item["创建时间"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        json_todo_item["完成状态"] = False
+
+        with open(self.json_file, "r") as f:
+            try:
+                todo_list = json.load(f)
+            except json.JSONDecodeError:
+                todo_list = []
+
+        todo_list.append(json_todo_item)
+
+        with open(self.json_file, "w", encoding="utf-8") as f:
+            json.dump(todo_list, f, indent=4, ensure_ascii=False)
+
+        return f"事项：{json_todo_item['事项名称']}，备注：{json_todo_item['备注']}，已记录完成"
 
     def read_todo(self, user_content):
         return f"用户输入：{user_content} ，已转换为待办事项，正在读取Todo"
