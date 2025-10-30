@@ -14,25 +14,48 @@ function App() {
     }
   ]);
   
-  const handleSendMessage = (message) => {
+  const handleSendMessage = async (message) => {
     setMessages((prev) => [...prev, {role: "user", content: message}]);
-    console.log(messages);
 
-    fetch("/chat", {
-      method: "POST",
-      body: JSON.stringify({content: message}),
-      headers: {
-        "Content-Type": "application/json"
+    try {
+      const response = await fetch("/chat", {
+        method: "POST",
+        body: JSON.stringify({content: message}),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.body) throw new Error("服务器未返回流数据");
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n");
+        buffer = parts.pop();
+
+        for (const jsonStr of parts) {
+          if (!jsonStr.trim()) continue;
+          try {
+            const data = JSON.parse(jsonStr);
+            setMessages((prev) => [...prev, {role: "assistant", content: data.message}]);
+
+          } catch (error) {
+            console.error("错误：解析 JSON:", error);
+          }
+        }
       }
-    })
-    .then(response => response.json())
-    .then(data => {
-      setMessages((prev) => [...prev, {role: "assistant", content: data.message}]);
-    })
-    .catch(error => {
+    } catch (error) {
       console.error("Error:", error);
       setMessages((prev) => [...prev, {role: "assistant", content: "⚠️ 无法连接到服务器，请稍后重试。"}]);
-    });
+    }
+
+
   }
 
   return (
