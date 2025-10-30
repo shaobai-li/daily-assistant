@@ -1,11 +1,12 @@
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 from openai import OpenAI
 from pydantic import BaseModel
 from typing import List
 import os
 from dotenv import load_dotenv
 from agents import RootAgent
-
+import json
 load_dotenv()
 
 app = FastAPI()
@@ -17,5 +18,9 @@ class Message(BaseModel):
 
 @app.post("/chat")
 async def chat(request: Message):
-    response = assistant.process_request(request.content)
-    return {"message": response}
+    def event_stream():
+        for chunk in assistant.recognize_intent(request.content):
+            yield json.dumps({
+                "message": chunk
+            }) + "\n"
+    return StreamingResponse(event_stream(), media_type="application/json")

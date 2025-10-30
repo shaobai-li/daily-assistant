@@ -2,8 +2,9 @@ from openai import OpenAI
 import os
 import json
 from datetime import datetime
+from .utils import clean_json_tags
 
-from openai.types.responses import response_audio_delta_event
+
 
 ROOT_SYS_PROMPT = """
 用户会输入一段文字，几乎都是下达和todo-list相关的一个或多个指令，偶尔会有对你发起的普通聊天。你的职责是：判断用户的意图，并输出一个 JSON 指令列表。
@@ -11,14 +12,11 @@ ROOT_SYS_PROMPT = """
 ```json
 [
     {
-        "id": "数字索引",
-        "用户意图分析": {
-            "用户的输入": "用户输入的原始文字",
-            "用户意图": "往todo-list中写入"/"从todo-list中读取"/"普通聊天",
-            "指令或提问": "指令/提问/其他",
-            "待办事项具体与否": "是/否",
-            "原因说明": "简短说明你是如何分析用户意图的"
-        }
+        "用户的输入": "用户输入的原始文字",
+        "用户意图": "往todo-list中写入"/"从todo-list中读取"/"普通聊天",
+        "指令或提问": "指令/提问/其他",
+        "待办事项具体与否": "是/否",
+        "原因说明": "简短说明你是如何分析用户意图的"    
     },
     ...
 ]
@@ -46,23 +44,23 @@ class RootAgent:
             "read_todo": self.read_todo
         }
 
-    def process_request(self, user_content):
+    def recognize_intent(self, user_content):
         root_messages = [{"role": "system", "content": ROOT_SYS_PROMPT}]
         root_messages.append({"role": "user", "content": user_content})
+        yield "思考用户的意图..."
         response_message = self.get_generation(root_messages)
-
-        content = None
-        if response_message.tool_calls:
-            root_messages.append({"role": "assistant", "content": response_message.content, "tool_calls": response_message.tool_calls})
-            tool = response_message.tool_calls[0]
-            content = self.function_calls[tool.function.name](user_content)
-            root_messages.append({"role": "tool", "tool_call_id": tool.id, "content": content})
-            response_message = self.get_generation(root_messages)
-
-        ai_content = response_message.content
-        root_messages.append({"role": "assistant", "content": ai_content})
-        print(ai_content)
-        return ai_content
+        content = clean_json_tags(response_message.content)
+        print(content)
+        items = json.loads(content)
+        for item in items:
+            result_message = None
+            if item["用户意图"] == "往todo-list中写入":
+                result_message = self.write_todo(item["用户的输入"])
+            elif item["用户意图"] == "从todo-list中读取":
+                result_message = self.read_todo(item["用户的输入"])
+            else:
+                result_message = self.normal_chat(item["用户的输入"])
+            yield result_message
 
     def get_generation(self, messages):
         response = self.client.chat.completions.create(
@@ -80,13 +78,14 @@ class RootAgent:
         info = response_message.content
     
         info_extraction_messages.append({"role": "assistant", "content": info})
-        print(info)
         return info
 
-    def read_todo(self, user_content):
-        return "Todo read successfully"
 
-    
+    def read_todo(self, user_content):
+        return f"用户输入：{user_content} ，已转换为待办事项，正在读取Todo"
+
+    def normal_chat(self, user_content):
+        return f"和用户正在普通聊天"
     # def store_todo(self, user_content):
     #     # use the user_content to create a new todo item
     #     # save the todo item to json file
