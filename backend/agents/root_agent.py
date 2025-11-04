@@ -7,13 +7,14 @@ from .utils import clean_json_tags
 
 
 ROOT_SYS_PROMPT = """
-用户会输入一段文字，几乎都是下达和todo-list相关的一个或多个指令，偶尔会有对你发起的普通聊天。你的职责是：判断用户的意图，并输出一个 JSON 指令列表。
+用户会输入一段文字，会包含todo-list相关的多个指令。你的职责是：判断用户的意图，明确区分出每一个指令，并输出一个 JSON 指令列表。
+注意：日程安排是todo-list的一部分。不要单独区分日程安排。
 输出格式必须严格符合以下规范（不要输出多余文字）：
 ```json
 [
     {
         "用户的输入": "用户输入的原始文字",
-        "用户意图": "往todo-list中写入"/"从todo-list中读取"/"普通聊天",
+        "用户意图": "修改todo-list"/"查询todo-list"/"普通聊天",
         "指令或提问": "指令/提问/其他",
         "待办事项具体与否": "是/否",
         "原因说明": "简短说明你是如何分析用户意图的"    
@@ -22,6 +23,24 @@ ROOT_SYS_PROMPT = """
 ]
 ```
 """
+
+REFLECTION_SYS_PROMPT = """
+你是反思助手，你的任务是反思之前判断的用户意图是否正确，尤其是当用户意图是普通聊天的情况。如果是错误的话，请修正其中的错误，并输出一个修正后的 JSON 指令列表。
+```json
+[
+    {
+        "用户的输入": "用户输入的原始文字",
+        "用户意图": "修改todo-list"/"查询todo-list"/"普通聊天",
+        "指令或提问": "指令/提问/其他",
+        "待办事项具体与否": "是/否",
+        "修正原因说明": "简短说明你是如何修正之前的输出错误的"    
+    },
+    ...
+]
+```
+"""
+
+
 
 INFO_EXTRACTION_SYS_PROMPT = """
 你是信息提取助手，负责从用户的自然语言输入中提取出事项的核心信息，并以 JSON 格式输出。
@@ -32,6 +51,13 @@ INFO_EXTRACTION_SYS_PROMPT = """
 }
 ```
 """
+
+READ_TODO_SYS_PROMPT = f"""
+你是信息提取助手，遵从用户指令，从下面todo-list中提取信息给用户。
+
+整个用户的todo-list如下：\n
+"""
+
 class RootAgent:
     def __init__(self):
         # self.client = OpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
@@ -49,12 +75,17 @@ class RootAgent:
         response_message = self.get_generation(root_messages)
         content = clean_json_tags(response_message.content)
         print(content)
+        # yield "反思一遍..."
+        # reflection_messages = [{"role": "system", "content": REFLECTION_SYS_PROMPT}]
+        # reflection_messages.append({"role": "user", "content": content})
+        # reflection_message = self.get_generation(reflection_messages)
+        # content = clean_json_tags(reflection_message.content)
         items = json.loads(content)
         for item in items:
             result_message = None
-            if item["用户意图"] == "往todo-list中写入":
+            if item["用户意图"] == "修改todo-list":
                 result_message = self.write_todo(item["用户的输入"])
-            elif item["用户意图"] == "从todo-list中读取":
+            elif item["用户意图"] == "查询todo-list":
                 result_message = self.read_todo(item["用户的输入"])
             else:
                 result_message = self.normal_chat(item["用户的输入"])
@@ -81,7 +112,7 @@ class RootAgent:
         json_todo_item["创建时间"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         json_todo_item["完成状态"] = False
 
-        with open(self.json_file, "r") as f:
+        with open(self.json_file, "r", encoding="utf-8") as f:
             try:
                 todo_list = json.load(f)
             except json.JSONDecodeError:
@@ -95,7 +126,13 @@ class RootAgent:
         return f"事项：{json_todo_item['事项名称']}，备注：{json_todo_item['备注']}，已记录完成"
 
     def read_todo(self, user_content):
-        return f"用户输入：{user_content} ，已转换为待办事项，正在读取Todo"
+
+        with open(self.json_file, "r", encoding="utf-8") as f:
+            read_todo_messages = [{"role": "system", "content": READ_TODO_SYS_PROMPT + f.read()}]
+        read_todo_messages.append({"role": "user", "content": user_content})
+        response_message = self.get_generation(read_todo_messages)
+        return response_message.content
+
 
     def normal_chat(self, user_content):
         return f"和用户正在普通聊天"
