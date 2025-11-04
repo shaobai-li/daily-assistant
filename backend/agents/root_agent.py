@@ -49,6 +49,9 @@ class RootAgent:
         # self.client = OpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.json_file = "todos.json"
+        if not os.path.exists(self.json_file):
+            with open(self.json_file, "w", encoding="utf-8") as f:
+                json.dump([], f, indent=4, ensure_ascii=False)
         self.function_calls = {
             "write_todo": self.write_todo,
             "read_todo": self.read_todo
