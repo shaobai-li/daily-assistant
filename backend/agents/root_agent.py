@@ -3,7 +3,10 @@ import os
 import json
 from datetime import datetime
 from .utils import clean_json_tags
+from difflib import SequenceMatcher
 
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
 
 
 ROOT_SYS_PROMPT = """
@@ -23,23 +26,6 @@ ROOT_SYS_PROMPT = """
 ]
 ```
 """
-
-REFLECTION_SYS_PROMPT = """
-你是反思助手，你的任务是反思之前判断的用户意图是否正确，尤其是当用户意图是普通聊天的情况。如果是错误的话，请修正其中的错误，并输出一个修正后的 JSON 指令列表。
-```json
-[
-    {
-        "用户的输入": "用户输入的原始文字",
-        "用户意图": "修改todo-list"/"查询todo-list"/"普通聊天",
-        "指令或提问": "指令/提问/其他",
-        "待办事项具体与否": "是/否",
-        "修正原因说明": "简短说明你是如何修正之前的输出错误的"    
-    },
-    ...
-]
-```
-"""
-
 
 
 INFO_EXTRACTION_SYS_PROMPT = """
@@ -101,11 +87,29 @@ class RootAgent:
 
     def write_todo(self, user_content):
 
+        delete_phrases = [
+            "把所有待办都删掉",
+            "清除全部任务",
+            "删除所有事项",
+            "把待办列表清空",
+            "全部日程都不要了",
+            "把待办清一清",
+            "把之前的任务全去掉",
+            "清理一下所有待办内容",
+            "把所有事项都移除",
+            "删光所有待办事项",
+            "清空todo-list"
+        ]
+        for phrase in delete_phrases:
+            if similar(user_content, phrase) > 0.6:
+                with open(self.json_file, "w", encoding="utf-8") as f:
+                    json.dump([], f, indent=4, ensure_ascii=False)
+                return "所有待办事项已清空。\n当前todo-list为空。"
+
         info_extraction_messages = [{"role": "system", "content": INFO_EXTRACTION_SYS_PROMPT}]
         info_extraction_messages.append({"role": "user", "content": user_content})
-        response_message = self.get_generation(info_extraction_messages)        
+        response_message = self.get_generation(info_extraction_messages)
         info = clean_json_tags(response_message.content)
-        print(info)
         info_extraction_messages.append({"role": "assistant", "content": info})
 
         json_todo_item = json.loads(info)
