@@ -28,6 +28,7 @@ function App() {
         headers: { "Content-Type": "application/json" },
       });
 
+      if (!response.ok) throw new Error("服务器返回错误状态: ${response.status}");
       if (!response.body) throw new Error("服务器未返回流数据");
       
       const reader = response.body.getReader();
