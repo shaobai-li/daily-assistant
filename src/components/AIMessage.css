@@ -1,0 +1,11 @@
+.ai-message {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.ai-message-bubble {
+    background-color: #ffffff;
+    padding: 10px;
+    margin: 10px;
+    margin-left: 0;
+}
