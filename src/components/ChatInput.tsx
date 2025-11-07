@@ -2,7 +2,11 @@ import './ChatInput.css';
 import { useState } from 'react';
 import sendButton from './icons8-send-button-90.png';
 
-export default function ChatInput({ onSendMessage }) {
+interface ChatInputProps {
+  onSendMessage: (message: string) => void;
+}
+
+export default function ChatInput({ onSendMessage }: ChatInputProps) {
   const [inputValue, setInputValue] = useState('');
 
   const handleSendMessage = () => {

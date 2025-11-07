@@ -1,20 +1,24 @@
+
 import ChatInput from "./components/ChatInput";
 import UserMessage from "./components/UserMessage";
 import AIMessage from "./components/AIMessage";
 import { useState } from "react";
 //import "./border.css";
 
-
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
 
 function App() {
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
       content: "Good day! 白哥"
     }
   ]);
   
-  const handleSendMessage = async (message) => {
+  const handleSendMessage = async (message: string) => {
     setMessages((prev) => [...prev, {role: "user", content: message}]);
 
     try {
@@ -37,7 +41,7 @@ function App() {
         
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split("\n");
-        buffer = parts.pop();
+        buffer = parts.pop() ?? "";
 
         for (const jsonStr of parts) {
           if (!jsonStr.trim()) continue;
