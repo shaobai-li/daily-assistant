@@ -1,6 +1,6 @@
 import './ChatInput.css';
 import { useState } from 'react';
-import sendButton from './icons8-send-button-90.png';
+import sendButton from '../assets/icons/icons8-send-button-90.png';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
