@@ -3,6 +3,7 @@ import ChatInput from "./components/ChatInput";
 import UserMessage from "./components/UserMessage";
 import AIMessage from "./components/AIMessage";
 import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 //import "./border.css";
 
 interface Message {
@@ -17,51 +18,25 @@ function App() {
       content: "Good day! 白哥"
     }
   ]);
-  
+    
   const handleSendMessage = async (message: string) => {
-    setMessages((prev) => [...prev, {role: "user", content: message}]);
+    setMessages((prev) => [...prev, { role: "user", content: message }]);
 
     try {
-      const response = await fetch("/chat", {
-        method: "POST",
-        body: JSON.stringify({content: message}),
-        headers: { "Content-Type": "application/json" },
-      });
+      const reply = await invoke<string>("chat_reply", { content: message });
 
-      if (!response.ok) throw new Error("服务器返回错误状态: ${response.status}");
-      if (!response.body) throw new Error("服务器未返回流数据");
-      
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split("\n");
-        buffer = parts.pop() ?? "";
-
-        for (const jsonStr of parts) {
-          if (!jsonStr.trim()) continue;
-          try {
-            const data = JSON.parse(jsonStr);
-            setMessages((prev) => [...prev, {role: "assistant", content: data.message}]);
-
-          } catch (error) {
-            console.error("错误：解析 JSON:", error);
-          }
-        }
-      }
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: reply },
+      ]);
     } catch (error) {
-      console.error("Error:", error);
-      setMessages((prev) => [...prev, {role: "assistant", content: "⚠️ 无法连接到服务器，请稍后重试。"}]);
+      console.error("Error invoking Rust command:", error);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "⚠️ 无法连接到后端，请稍后重试。" },
+      ]);
     }
-
-
-  }
+  };
 
   return (
     <>
