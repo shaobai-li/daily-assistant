@@ -1,3 +1,5 @@
+use crate::agents::root_agent::RootAgent;
+
 #[tauri::command]
 pub async fn chat_reply(content: String) -> Result<String, String> {
     println!("收到前端消息: {}", content);
@@ -28,4 +30,10 @@ pub async fn chat_reply(content: String) -> Result<String, String> {
 
     let text = resp.text().await.map_err(|e| e.to_string())?;
     Ok(text)
+}
+
+#[tauri::command]
+pub fn agent_ping() -> String {
+    let agent = RootAgent::new();
+    agent.hello()
 }
