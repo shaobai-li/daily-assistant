@@ -33,7 +33,8 @@ pub async fn chat_reply(content: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn agent_ping() -> String {
-    let agent = RootAgent::new();
-    agent.hello()
+pub fn agent_ping() -> Result<String, String> {
+
+    let agent = RootAgent::new()?;
+    Ok(agent.hello())
 }
