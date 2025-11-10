@@ -8,7 +8,7 @@ impl RootAgent {
     pub fn new() -> Result<Self, String> {
         dotenvy::dotenv().ok();
         let api_key = env::var("DEEPSEEK_API_KEY").map_err(|e| e.to_string())?;
-        Ok(Self { api_key})        RootAgent
+        Ok(Self { api_key})
     }
 
     pub fn hello(&self) -> String {
